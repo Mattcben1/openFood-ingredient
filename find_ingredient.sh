@@ -69,5 +69,6 @@ if [ $# -eq 0 ]; then
 fi
 
 # Adjust this path if your CSV is inside Case3File/
-csvgrep -c ingredients -m "$1" Case3File/products.csv
+csvgrep -c ingredients -m "$1" Case3File/Products.csv
+
 
