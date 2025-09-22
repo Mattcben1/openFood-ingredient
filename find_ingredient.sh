@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Usage: ./find_ingredient.sh -i "<ingredient>" -d /path/to/folder
-# Input: products.csv (TSV) must exist inside the folder.
+# Input: products.csv must exist inside the folder.
 # Output: product_name<TAB>code for matches, then a final count line.
 
 set -euo pipefail  # safer Bash: exit on errors, unset vars, or failed pipelines
 
-# Allow up to 1 GB per field (needed for huge TSV rows)
+# Allow large CSV fields
 export CSVKIT_FIELD_SIZE_LIMIT=$((1024 * 1024 * 1024))
 
 INGREDIENT=""
@@ -16,7 +16,7 @@ CSV=""
 usage() {
     echo "Usage: $0 -i \"<ingredient>\" -d /path/to/folder"
     echo "  -i ingredient to search (case-insensitive)"
-    echo "  -d folder containing products.csv (tab-separated)"
+    echo "  -d folder containing products.csv"
     echo "  -h show help"
 }
 
@@ -39,13 +39,22 @@ CSV="$DATA_DIR/products.csv"
 
 # Check required csvkit tools
 for cmd in csvcut csvgrep csvformat; do
-    command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd not found. Please install csvkit." >&2; exit 1; }
+    command -v "$cmd" >/dev/null 2>&1 || { 
+        echo "ERROR: $cmd not found. Please install csvkit." >&2
+        exit 1
+    }
 done
+
+# Detect delimiter: if first line contains comma, assume comma; else tab
+DELIM=$'\t'
+if head -n1 "$CSV" | grep -q ','; then
+    DELIM=','
+fi
 
 # Core pipeline
 tmp_matches="$(mktemp)"
-csvcut -t -c ingredients_text,product_name,code "$CSV" \
-    | csvgrep -t -c ingredients_text -r "(?i)${INGREDIENT}" \
+csvcut -d "$DELIM" -c ingredients_text,product_name,code "$CSV" \
+    | csvgrep -d "$DELIM" -c ingredients_text -r "(?i)${INGREDIENT}" \
     | csvcut -c product_name,code \
     | csvformat -T \
     | tail -n +2 \
