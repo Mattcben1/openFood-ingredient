@@ -65,6 +65,13 @@ count="$(wc -l < "$tmp_matches" | tr -d ' ')"
 echo "----"
 echo "Found ${count} product(s) containing: \"${INGREDIENT}\""
 
+# Exit non-zero if no matches
+if [ "$count" -eq 0 ]; then
+    rm -f "$tmp_matches"
+    exit 1
+fi
+
 # Cleanup
 rm -f "$tmp_matches"
+exit 0
 
